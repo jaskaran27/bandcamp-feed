@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Bandcamp Feed{% endblock %}</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'bc-teal': '#1da0c3',
+                        'bc-teal-dark': '#148aa8',
+                        'bc-cream': '#f5f0e6',
+                        'bc-dark': '#111111',
+                        'bc-gray': '#1a1a1a',
+                        'bc-gray-light': '#2a2a2a',
+                    },
+                    fontFamily: {
+                        'display': ['"DM Sans"', 'system-ui', 'sans-serif'],
+                        'body': ['"IBM Plex Sans"', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    
+    <style>
+        body {
+            background-color: #111111;
+            min-height: 100vh;
+        }
+        
+        /* Album card hover effect */
+        .album-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .album-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px -12px rgba(29, 160, 195, 0.3);
+        }
+        
+        /* Loading spinner */
+        .htmx-request .sync-icon {
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Fade in animation for cards */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .album-card {
+            animation: fadeInUp 0.4s ease forwards;
+        }
+        .album-card:nth-child(1) { animation-delay: 0.05s; }
+        .album-card:nth-child(2) { animation-delay: 0.1s; }
+        .album-card:nth-child(3) { animation-delay: 0.15s; }
+        .album-card:nth-child(4) { animation-delay: 0.2s; }
+        .album-card:nth-child(5) { animation-delay: 0.25s; }
+        .album-card:nth-child(6) { animation-delay: 0.3s; }
+        .album-card:nth-child(7) { animation-delay: 0.35s; }
+        .album-card:nth-child(8) { animation-delay: 0.4s; }
+        
+        /* Toast notification */
+        .toast {
+            animation: slideIn 0.3s ease, fadeOut 0.3s ease 2.7s forwards;
+        }
+        @keyframes slideIn {
+            from { transform: translateY(-100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes fadeOut {
+            to { opacity: 0; transform: translateY(-20px); }
+        }
+    </style>
+</head>
+<body class="font-body text-bc-cream antialiased" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+    <!-- Toast container -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50"></div>
+    
+    {% block content %}{% endblock %}
+    
+    <script>
+        // Toast notification handler
+        function showToast(message, isError = false) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = isError 
+                ? 'toast bg-red-500 text-white px-4 py-3 rounded-lg shadow-lg font-medium max-w-sm'
+                : 'toast bg-bc-teal text-white px-4 py-3 rounded-lg shadow-lg font-medium max-w-sm';
+            toast.textContent = message;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 5000);
+        }
+        
+        document.body.addEventListener('showToast', function(e) {
+            const message = e.detail.value || e.detail;
+            showToast(message, false);
+        });
+        
+        // Handle HTMX errors globally
+        document.body.addEventListener('htmx:responseError', function(e) {
+            const status = e.detail.xhr.status;
+            let message = 'Something went wrong. Please try again.';
+            
+            if (status === 403) {
+                message = 'Request forbidden. Please refresh the page and try again.';
+            } else if (status === 500) {
+                message = 'Server error. Check your email credentials in .env file.';
+            } else if (status === 0) {
+                message = 'Network error. Please check your connection.';
+            }
+            
+            showToast(message, true);
+        });
+        
+        // Handle network errors
+        document.body.addEventListener('htmx:sendError', function(e) {
+            showToast('Network error. Please check your connection.', true);
+        });
+    </script>
+</body>
+</html>

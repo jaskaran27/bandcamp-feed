@@ -1,0 +1,368 @@
+{% extends 'feed/base.html' %}
+
+{% block content %}
+<div class="min-h-screen flex flex-col">
+    <!-- Header -->
+    <header class="sticky top-0 z-40 backdrop-blur-md bg-bc-dark/80 border-b border-bc-gray-light/30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center justify-between">
+                <!-- Logo -->
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-bc-teal to-bc-teal-dark flex items-center justify-center">
+                        <!-- Vinyl/Record icon -->
+                        <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <circle cx="12" cy="12" r="10" />
+                            <circle cx="12" cy="12" r="3" />
+                            <circle cx="12" cy="12" r="6" stroke-dasharray="2 2" />
+                        </svg>
+                    </div>
+                    <h1 class="font-display text-2xl font-bold tracking-tight">
+                        Bandcamp Feed
+                    </h1>
+                </div>
+                
+                <!-- Sync Button -->
+                <button 
+                    onclick="startSync()"
+                    id="sync-btn"
+                    class="group flex items-center gap-2 px-4 py-2 rounded-lg bg-bc-teal hover:bg-bc-teal-dark transition-colors font-medium text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    <svg id="sync-icon" class="w-5 h-5 transition-transform group-hover:rotate-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    <span id="sync-btn-text">Sync Emails</span>
+                </button>
+            </div>
+        </div>
+    </header>
+    
+    <!-- Sync Progress Panel (hidden by default) -->
+    <div id="sync-progress" class="hidden bg-bc-gray border-b border-bc-gray-light/30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center gap-4">
+                <div class="flex-shrink-0">
+                    <svg class="w-5 h-5 text-bc-teal animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p id="sync-status" class="text-sm text-bc-cream">Connecting...</p>
+                    <p id="sync-current" class="text-xs text-bc-cream/60 truncate mt-0.5"></p>
+                </div>
+                <div class="flex-shrink-0 text-right">
+                    <p class="text-sm text-bc-teal font-medium">
+                        <span id="sync-new-count">0</span> new
+                    </p>
+                    <p class="text-xs text-bc-cream/40">
+                        <span id="sync-processed">0</span> processed
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Search and Filters -->
+        <div class="mb-6 space-y-4">
+            <!-- Search Bar -->
+            <div class="flex flex-col sm:flex-row gap-3">
+                <div class="flex-1 relative">
+                    <input 
+                        type="text" 
+                        id="search-input"
+                        placeholder="Search by artist, label, or release..."
+                        value="{{ search }}"
+                        autocomplete="off"
+                        autocorrect="off"
+                        autocapitalize="off"
+                        spellcheck="false"
+                        class="w-full pl-10 pr-4 py-2.5 rounded-lg bg-bc-gray border border-bc-gray-light/30 text-bc-cream placeholder-bc-cream/40 focus:outline-none focus:border-bc-teal/50 focus:ring-1 focus:ring-bc-teal/50"
+                        hx-get="{% url 'feed:releases_partial' %}"
+                        hx-trigger="keyup changed delay:300ms, search"
+                        hx-target="#releases-grid"
+                        hx-swap="innerHTML"
+                        hx-include=".filter-input"
+                        name="search"
+                    >
+                    <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-bc-cream/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                </div>
+                
+                <!-- Custom Filter Dropdowns -->
+                <div class="flex gap-2">
+                    <!-- Date Filter -->
+                    <div class="relative" data-dropdown>
+                        <input type="hidden" id="date-filter" name="date" value="{{ date_filter }}" class="filter-input">
+                        <button 
+                            type="button"
+                            class="dropdown-trigger flex items-center gap-2 px-3 py-2.5 rounded-lg bg-bc-gray border border-bc-gray-light/30 text-bc-cream hover:border-bc-gray-light/50 transition-colors min-w-[130px]"
+                            onclick="toggleDropdown(this)"
+                        >
+                            <svg class="w-4 h-4 text-bc-cream/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                            <span class="dropdown-label text-sm">{% if date_filter == 'all' %}All Time{% elif date_filter == 'week' %}This Week{% elif date_filter == 'month' %}This Month{% elif date_filter == '3months' %}Last 3 Months{% elif date_filter == 'year' %}This Year{% endif %}</span>
+                            <svg class="w-4 h-4 text-bc-cream/40 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        <div class="dropdown-menu hidden absolute top-full left-0 mt-1 w-full min-w-[150px] py-1 rounded-lg bg-bc-gray-light border border-bc-gray-light/50 shadow-xl z-50">
+                            <button type="button" class="dropdown-item w-full px-3 py-2 text-left text-sm text-bc-cream hover:bg-bc-teal/20 transition-colors {% if date_filter == 'all' %}bg-bc-teal/10 text-bc-teal{% endif %}" data-value="all">All Time</button>
+                            <button type="button" class="dropdown-item w-full px-3 py-2 text-left text-sm text-bc-cream hover:bg-bc-teal/20 transition-colors {% if date_filter == 'week' %}bg-bc-teal/10 text-bc-teal{% endif %}" data-value="week">This Week</button>
+                            <button type="button" class="dropdown-item w-full px-3 py-2 text-left text-sm text-bc-cream hover:bg-bc-teal/20 transition-colors {% if date_filter == 'month' %}bg-bc-teal/10 text-bc-teal{% endif %}" data-value="month">This Month</button>
+                            <button type="button" class="dropdown-item w-full px-3 py-2 text-left text-sm text-bc-cream hover:bg-bc-teal/20 transition-colors {% if date_filter == '3months' %}bg-bc-teal/10 text-bc-teal{% endif %}" data-value="3months">Last 3 Months</button>
+                            <button type="button" class="dropdown-item w-full px-3 py-2 text-left text-sm text-bc-cream hover:bg-bc-teal/20 transition-colors {% if date_filter == 'year' %}bg-bc-teal/10 text-bc-teal{% endif %}" data-value="year">This Year</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Sort Filter -->
+                    <div class="relative" data-dropdown>
+                        <input type="hidden" id="sort-filter" name="sort" value="{{ sort }}" class="filter-input">
+                        <button 
+                            type="button"
+                            class="dropdown-trigger flex items-center gap-2 px-3 py-2.5 rounded-lg bg-bc-gray border border-bc-gray-light/30 text-bc-cream hover:border-bc-gray-light/50 transition-colors min-w-[140px]"
+                            onclick="toggleDropdown(this)"
+                        >
+                            <svg class="w-4 h-4 text-bc-cream/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"></path>
+                            </svg>
+                            <span class="dropdown-label text-sm">{% if sort == 'newest' %}Newest{% elif sort == 'oldest' %}Oldest{% elif sort == 'uploader_az' %}A-Z{% elif sort == 'uploader_za' %}Z-A{% endif %}</span>
+                            <svg class="w-4 h-4 text-bc-cream/40 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        <div class="dropdown-menu hidden absolute top-full right-0 mt-1 w-full min-w-[150px] py-1 rounded-lg bg-bc-gray-light border border-bc-gray-light/50 shadow-xl z-50">
+                            <button type="button" class="dropdown-item w-full px-3 py-2 text-left text-sm text-bc-cream hover:bg-bc-teal/20 transition-colors {% if sort == 'newest' %}bg-bc-teal/10 text-bc-teal{% endif %}" data-value="newest">Newest First</button>
+                            <button type="button" class="dropdown-item w-full px-3 py-2 text-left text-sm text-bc-cream hover:bg-bc-teal/20 transition-colors {% if sort == 'oldest' %}bg-bc-teal/10 text-bc-teal{% endif %}" data-value="oldest">Oldest First</button>
+                            <button type="button" class="dropdown-item w-full px-3 py-2 text-left text-sm text-bc-cream hover:bg-bc-teal/20 transition-colors {% if sort == 'uploader_az' %}bg-bc-teal/10 text-bc-teal{% endif %}" data-value="uploader_az">Uploader A-Z</button>
+                            <button type="button" class="dropdown-item w-full px-3 py-2 text-left text-sm text-bc-cream hover:bg-bc-teal/20 transition-colors {% if sort == 'uploader_za' %}bg-bc-teal/10 text-bc-teal{% endif %}" data-value="uploader_za">Uploader Z-A</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Stats Bar -->
+            <div class="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+                <p class="text-bc-cream/60">
+                    <span id="release-count" class="text-bc-cream font-medium">{{ release_count }}</span>
+                    {% if search or date_filter != 'all' %}
+                    result{{ release_count|pluralize }}
+                    <span class="text-bc-cream/40">({{ total_in_db }} total)</span>
+                    {% else %}
+                    release{{ release_count|pluralize }} in your feed
+                    {% endif %}
+                </p>
+                {% if stats.this_week > 0 %}
+                <p class="text-bc-cream/40">
+                    <span class="text-bc-teal">{{ stats.this_week }}</span> this week
+                </p>
+                {% endif %}
+                {% if stats.oldest_date %}
+                <p class="text-bc-cream/40 hidden sm:block">
+                    Since {{ stats.oldest_date|date:"M Y" }}
+                </p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Releases Grid -->
+        <div id="releases-grid">
+            {% include 'feed/partials/releases.html' %}
+        </div>
+    </main>
+    
+    <!-- Footer -->
+    <footer class="border-t border-bc-gray-light/30 mt-auto pt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <p class="text-center text-bc-cream/40 text-sm">
+                Bandcamp Feed &middot; Your personal new release tracker
+            </p>
+        </div>
+    </footer>
+</div>
+
+<script>
+let isSyncing = false;
+
+// Custom dropdown logic
+function toggleDropdown(trigger) {
+    const dropdown = trigger.closest('[data-dropdown]');
+    const menu = dropdown.querySelector('.dropdown-menu');
+    const isOpen = !menu.classList.contains('hidden');
+    
+    // Close all dropdowns first
+    document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.add('hidden'));
+    
+    if (!isOpen) {
+        menu.classList.remove('hidden');
+    }
+}
+
+// Handle dropdown item selection
+document.addEventListener('click', function(e) {
+    // Handle dropdown item clicks
+    if (e.target.classList.contains('dropdown-item')) {
+        const dropdown = e.target.closest('[data-dropdown]');
+        const hiddenInput = dropdown.querySelector('input[type="hidden"]');
+        const label = dropdown.querySelector('.dropdown-label');
+        const menu = dropdown.querySelector('.dropdown-menu');
+        
+        // Update value and label
+        hiddenInput.value = e.target.dataset.value;
+        label.textContent = e.target.textContent;
+        
+        // Update active state
+        dropdown.querySelectorAll('.dropdown-item').forEach(item => {
+            item.classList.remove('bg-bc-teal/10', 'text-bc-teal');
+        });
+        e.target.classList.add('bg-bc-teal/10', 'text-bc-teal');
+        
+        // Close menu
+        menu.classList.add('hidden');
+        
+        // Trigger HTMX request
+        htmx.ajax('GET', '{% url "feed:releases_partial" %}', {
+            target: '#releases-grid',
+            swap: 'innerHTML',
+            values: {
+                search: document.getElementById('search-input').value,
+                date: document.getElementById('date-filter').value,
+                sort: document.getElementById('sort-filter').value
+            }
+        });
+        
+        return;
+    }
+    
+    // Close dropdowns when clicking outside
+    if (!e.target.closest('[data-dropdown]')) {
+        document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.add('hidden'));
+    }
+});
+
+// Close dropdowns on escape
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.add('hidden'));
+    }
+});
+
+function startSync() {
+    if (isSyncing) return;
+    isSyncing = true;
+    
+    const btn = document.getElementById('sync-btn');
+    const btnText = document.getElementById('sync-btn-text');
+    const syncIcon = document.getElementById('sync-icon');
+    const progressPanel = document.getElementById('sync-progress');
+    const statusEl = document.getElementById('sync-status');
+    const currentEl = document.getElementById('sync-current');
+    const newCountEl = document.getElementById('sync-new-count');
+    const processedEl = document.getElementById('sync-processed');
+    
+    // Disable button and show progress
+    btn.disabled = true;
+    btnText.textContent = 'Syncing...';
+    syncIcon.classList.add('animate-spin');
+    progressPanel.classList.remove('hidden');
+    
+    // Reset counters
+    newCountEl.textContent = '0';
+    processedEl.textContent = '0';
+    currentEl.textContent = '';
+    statusEl.textContent = 'Connecting...';
+    
+    // Start SSE connection
+    const eventSource = new EventSource('{% url "feed:sync_stream" %}');
+    
+    eventSource.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+        
+        if (data.type === 'progress') {
+            statusEl.textContent = data.message || 'Processing emails...';
+            processedEl.textContent = data.processed || 0;
+            newCountEl.textContent = data.new_count || 0;
+        } else if (data.type === 'added') {
+            newCountEl.textContent = data.new_count;
+            processedEl.textContent = data.processed;
+            currentEl.textContent = `${data.uploader} - ${data.release_name}`;
+            statusEl.textContent = 'Found new release!';
+        } else if (data.type === 'complete') {
+            eventSource.close();
+            finishSync(data.new_count, data.reached_limit);
+        } else if (data.type === 'error') {
+            eventSource.close();
+            showError(data.message);
+        }
+    };
+    
+    eventSource.onerror = function() {
+        eventSource.close();
+        showError('Connection lost. Please try again.');
+    };
+}
+
+function finishSync(newCount, reachedLimit) {
+    isSyncing = false;
+    
+    const btn = document.getElementById('sync-btn');
+    const btnText = document.getElementById('sync-btn-text');
+    const syncIcon = document.getElementById('sync-icon');
+    const progressPanel = document.getElementById('sync-progress');
+    
+    // Re-enable button
+    btn.disabled = false;
+    btnText.textContent = 'Sync Emails';
+    syncIcon.classList.remove('animate-spin');
+    
+    // Hide progress after a delay
+    setTimeout(() => {
+        progressPanel.classList.add('hidden');
+    }, 2000);
+    
+    // Show toast
+    let message = `Synced! Found ${newCount} new release${newCount !== 1 ? 's' : ''}.`;
+    if (reachedLimit) {
+        message += ' Run sync again for more.';
+    }
+    showToast(message, false);
+    
+    // Clear filters and refresh
+    document.getElementById('search-input').value = '';
+    document.getElementById('date-filter').value = 'all';
+    document.getElementById('sort-filter').value = 'newest';
+    
+    // Reload page to update stats
+    setTimeout(() => {
+        window.location.href = '{% url "feed:index" %}';
+    }, 1000);
+}
+
+function showError(message) {
+    isSyncing = false;
+    
+    const btn = document.getElementById('sync-btn');
+    const btnText = document.getElementById('sync-btn-text');
+    const syncIcon = document.getElementById('sync-icon');
+    const progressPanel = document.getElementById('sync-progress');
+    
+    btn.disabled = false;
+    btnText.textContent = 'Sync Emails';
+    syncIcon.classList.remove('animate-spin');
+    progressPanel.classList.add('hidden');
+    
+    showToast(message, true);
+}
+
+// Clear search on Escape key
+document.getElementById('search-input').addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        this.value = '';
+        htmx.trigger(this, 'search');
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,176 @@
+{% if error_message %}
+<div class="mb-6 p-4 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400">
+    <div class="flex items-center gap-2">
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <span>{{ error_message }}</span>
+    </div>
+</div>
+{% endif %}
+
+{% if sync_message %}
+<div class="mb-6 p-4 rounded-lg bg-bc-teal/10 border border-bc-teal/30 text-bc-teal">
+    <div class="flex items-center gap-2">
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+        <span>{{ sync_message }}</span>
+    </div>
+</div>
+{% endif %}
+
+{% if releases %}
+<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-5">
+    {% for release in releases %}
+    <a 
+        href="{{ release.bandcamp_url }}" 
+        target="_blank" 
+        rel="noopener noreferrer"
+        class="album-card group relative block rounded-xl overflow-hidden bg-bc-gray border border-bc-gray-light/30 hover:border-bc-teal/50 max-w-[210px]"
+        style="opacity: 0;"
+    >
+        <!-- Album Art -->
+        <div class="aspect-square overflow-hidden bg-bc-gray-light max-w-[210px] max-h-[210px] relative">
+            {% if release.album_art_url %}
+            <!-- Placeholder shown until image loads or on error (vinyl record icon) -->
+            <div class="img-placeholder absolute inset-0 flex items-center justify-center bg-gradient-to-br from-bc-gray to-bc-gray-light">
+                <svg class="w-14 h-14 text-bc-cream/15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                    <circle cx="12" cy="12" r="10" />
+                    <circle cx="12" cy="12" r="3" />
+                    <circle cx="12" cy="12" r="6" stroke-dasharray="1.5 1.5" />
+                    <circle cx="12" cy="12" r="8" stroke-dasharray="0.5 2" />
+                </svg>
+            </div>
+            <img 
+                src="{{ release.album_art_url }}" 
+                alt="{{ release.uploader }} - {{ release.release_name }}"
+                class="album-img relative w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                loading="lazy"
+                onload="this.previousElementSibling.style.display='none'"
+                onerror="this.style.display='none'"
+            >
+            {% else %}
+            <!-- Placeholder for missing album art (vinyl record icon) -->
+            <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-bc-gray to-bc-gray-light">
+                <svg class="w-14 h-14 text-bc-cream/15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                    <circle cx="12" cy="12" r="10" />
+                    <circle cx="12" cy="12" r="3" />
+                    <circle cx="12" cy="12" r="6" stroke-dasharray="1.5 1.5" />
+                    <circle cx="12" cy="12" r="8" stroke-dasharray="0.5 2" />
+                </svg>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Release Info -->
+        <div class="p-3">
+            <h3 class="font-display font-medium text-sm text-bc-cream truncate group-hover:text-bc-teal transition-colors">
+                {{ release.release_name }}
+            </h3>
+            <p class="text-xs text-bc-cream/60 truncate mt-0.5">
+                {{ release.uploader }}
+            </p>
+            <p class="text-xs text-bc-cream/40 mt-1.5">
+                {{ release.received_at|date:"M j, Y" }}
+            </p>
+        </div>
+        
+        <!-- External link indicator -->
+        <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div class="w-7 h-7 rounded-full bg-bc-dark/80 backdrop-blur flex items-center justify-center">
+                <svg class="w-3.5 h-3.5 text-bc-cream" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                </svg>
+            </div>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+
+<!-- Pagination -->
+{% if total_pages > 1 %}
+<div class="mt-8 flex items-center justify-center gap-2">
+    {% if has_prev %}
+    <a 
+        href="?page={{ prev_page }}{% if base_query %}&{{ base_query }}{% endif %}"
+        hx-get="{% url 'feed:releases_partial' %}?page={{ prev_page }}{% if search %}&search={{ search }}{% endif %}{% if date_filter and date_filter != 'all' %}&date={{ date_filter }}{% endif %}{% if sort and sort != 'newest' %}&sort={{ sort }}{% endif %}"
+        hx-target="#releases-grid"
+        hx-swap="innerHTML"
+        class="flex items-center gap-1 px-4 py-2 rounded-lg bg-bc-gray border border-bc-gray-light/30 hover:border-bc-teal/50 text-bc-cream/80 hover:text-bc-cream transition-colors"
+    >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+        </svg>
+        <span class="text-sm">Prev</span>
+    </a>
+    {% else %}
+    <span class="flex items-center gap-1 px-4 py-2 rounded-lg bg-bc-gray/50 text-bc-cream/30 cursor-not-allowed">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+        </svg>
+        <span class="text-sm">Prev</span>
+    </span>
+    {% endif %}
+    
+    <span class="px-4 py-2 text-sm text-bc-cream/60">
+        Page {{ current_page }} of {{ total_pages }}
+    </span>
+    
+    {% if has_next %}
+    <a 
+        href="?page={{ next_page }}{% if base_query %}&{{ base_query }}{% endif %}"
+        hx-get="{% url 'feed:releases_partial' %}?page={{ next_page }}{% if search %}&search={{ search }}{% endif %}{% if date_filter and date_filter != 'all' %}&date={{ date_filter }}{% endif %}{% if sort and sort != 'newest' %}&sort={{ sort }}{% endif %}"
+        hx-target="#releases-grid"
+        hx-swap="innerHTML"
+        class="flex items-center gap-1 px-4 py-2 rounded-lg bg-bc-gray border border-bc-gray-light/30 hover:border-bc-teal/50 text-bc-cream/80 hover:text-bc-cream transition-colors"
+    >
+        <span class="text-sm">Next</span>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+        </svg>
+    </a>
+    {% else %}
+    <span class="flex items-center gap-1 px-4 py-2 rounded-lg bg-bc-gray/50 text-bc-cream/30 cursor-not-allowed">
+        <span class="text-sm">Next</span>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+        </svg>
+    </span>
+    {% endif %}
+</div>
+{% endif %}
+
+{% elif search or date_filter != 'all' %}
+<!-- No results for filter -->
+<div class="text-center py-16">
+    <div class="w-20 h-20 mx-auto mb-6 rounded-full bg-bc-gray flex items-center justify-center">
+        <svg class="w-10 h-10 text-bc-cream/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+        </svg>
+    </div>
+    <h3 class="font-display text-xl font-medium text-bc-cream mb-2">No releases found</h3>
+    <p class="text-bc-cream/60 max-w-sm mx-auto">
+        {% if search %}
+        No releases match "<span class="text-bc-cream">{{ search }}</span>".
+        {% else %}
+        No releases in this time period.
+        {% endif %}
+        Try adjusting your filters.
+    </p>
+</div>
+
+{% else %}
+<!-- Empty State -->
+<div class="text-center py-16">
+    <div class="w-20 h-20 mx-auto mb-6 rounded-full bg-bc-gray flex items-center justify-center">
+        <svg class="w-10 h-10 text-bc-cream/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+        </svg>
+    </div>
+    <h3 class="font-display text-xl font-medium text-bc-cream mb-2">No releases yet</h3>
+    <p class="text-bc-cream/60 max-w-sm mx-auto">
+        Click the <span class="text-bc-teal font-medium">Sync Emails</span> button to fetch your Bandcamp new release notifications.
+    </p>
+</div>
+{% endif %}
