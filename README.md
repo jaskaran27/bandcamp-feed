@@ -5,7 +5,7 @@ A local Django web application that connects to your Gmail via IMAP, filters for
 ![Python](https://img.shields.io/badge/Python-3.11+-blue)
 ![Django](https://img.shields.io/badge/Django-5.2-green)
 
-<img width="3420" height="3960" alt="screencapture-localhost-8000-2026-01-12-11_40_47" src="https://github.com/user-attachments/assets/bf261519-1394-4a0c-b716-9d6e5fc68045" />
+<img width="1710" height="871" alt="Screenshot 2026-01-12 at 11 48 14 AM" src="https://github.com/user-attachments/assets/12ad7429-20c1-41a6-a23d-8141a1eb5988" />
 
 ## Features
 
@@ -114,7 +114,7 @@ EMAIL_PASSWORD=abcd efgh ijkl mnop  # (remove spaces)
 5. **Sort**: Order by newest, oldest, or uploader name (A-Z or Z-A)
 6. **Browse**: Click any release card to open it on Bandcamp
 
-<img width="3420" height="3960" alt="screencapture-localhost-8000-2026-01-12-11_42_24" src="https://github.com/user-attachments/assets/22755e72-10c7-49fa-81c4-43ac8e291e04" />
+<img width="1710" height="873" alt="Screenshot 2026-01-12 at 11 47 06 AM" src="https://github.com/user-attachments/assets/4ecc3b7e-e051-49fd-a629-47710f900225" />
 
 ## Project Structure
 
