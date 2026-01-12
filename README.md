@@ -5,6 +5,8 @@ A local Django web application that connects to your Gmail via IMAP, filters for
 ![Python](https://img.shields.io/badge/Python-3.11+-blue)
 ![Django](https://img.shields.io/badge/Django-5.2-green)
 
+<img width="3420" height="3960" alt="screencapture-localhost-8000-2026-01-12-11_40_47" src="https://github.com/user-attachments/assets/bf261519-1394-4a0c-b716-9d6e5fc68045" />
+
 ## Features
 
 - **Gmail IMAP Integration**: Connects to Gmail to fetch Bandcamp notification emails from all folders
@@ -111,6 +113,8 @@ EMAIL_PASSWORD=abcd efgh ijkl mnop  # (remove spaces)
 4. **Filter by Date**: Use the dropdown to show releases from the last week, month, 3 months, or year
 5. **Sort**: Order by newest, oldest, or uploader name (A-Z or Z-A)
 6. **Browse**: Click any release card to open it on Bandcamp
+
+<img width="3420" height="3960" alt="screencapture-localhost-8000-2026-01-12-11_42_24" src="https://github.com/user-attachments/assets/22755e72-10c7-49fa-81c4-43ac8e291e04" />
 
 ## Project Structure
 
