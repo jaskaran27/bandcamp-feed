@@ -5,7 +5,7 @@ A local Django web application that connects to your Gmail via IMAP, filters for
 ![Python](https://img.shields.io/badge/Python-3.11+-blue)
 ![Django](https://img.shields.io/badge/Django-5.2-green)
 
-<img width="1710" height="871" alt="Screenshot 2026-01-12 at 11 48 14 AM" src="https://github.com/user-attachments/assets/12ad7429-20c1-41a6-a23d-8141a1eb5988" />
+<img width="1710" height="874" alt="Bandcamp Feed" src="https://github.com/user-attachments/assets/022de89b-757b-4c4a-a4a8-31949331716a" />
 
 ## Features
 
@@ -15,7 +15,6 @@ A local Django web application that connects to your Gmail via IMAP, filters for
 - **Two-Phase Sync**: Prioritizes recent emails first, then processes historical backlog incrementally
 - **Real-time Progress**: Server-Sent Events (SSE) provide live feedback during email sync
 - **Search & Filter**: Filter releases by text search, date range, and sort order
-- **Pagination**: Navigate through releases in pages of 25
 - **Custom Domain Support**: Handles both `*.bandcamp.com` URLs and custom artist domains
 
 ## Tech Stack
@@ -94,7 +93,7 @@ Gmail requires an App Password for IMAP access (your regular password won't work
 ### Step 3: Add to .env
 ```
 EMAIL_USER=your-email@gmail.com
-EMAIL_PASSWORD=abcd efgh ijkl mnop  # (remove spaces)
+EMAIL_PASSWORD=abcd efgh ijkl mnop
 ```
 
 ## Configuration
@@ -114,7 +113,8 @@ EMAIL_PASSWORD=abcd efgh ijkl mnop  # (remove spaces)
 5. **Sort**: Order by newest, oldest, or uploader name (A-Z or Z-A)
 6. **Browse**: Click any release card to open it on Bandcamp
 
-<img width="1710" height="873" alt="Screenshot 2026-01-12 at 11 47 06 AM" src="https://github.com/user-attachments/assets/4ecc3b7e-e051-49fd-a629-47710f900225" />
+<img width="1710" height="873" alt="Bandcamp Feed" src="https://github.com/user-attachments/assets/00fd3096-17b2-485f-a43b-bbb08083f354" />
+
 
 ## Project Structure
 
