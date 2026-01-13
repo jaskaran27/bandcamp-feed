@@ -93,6 +93,29 @@
                 
                 <!-- Custom Filter Dropdowns -->
                 <div class="flex gap-2">
+                    <!-- Type Filter -->
+                    <div class="relative" data-dropdown>
+                        <input type="hidden" id="type-filter" name="type" value="{{ release_type }}" class="filter-input">
+                        <button 
+                            type="button"
+                            class="dropdown-trigger flex items-center gap-2 px-3 py-2.5 rounded-lg bg-bc-gray border border-bc-gray-light/30 text-bc-cream hover:border-bc-gray-light/50 transition-colors min-w-[110px]"
+                            onclick="toggleDropdown(this)"
+                        >
+                            <svg class="w-4 h-4 text-bc-cream/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path>
+                            </svg>
+                            <span class="dropdown-label text-sm">{% if release_type == 'all' %}All Types{% elif release_type == 'album' %}Albums{% elif release_type == 'track' %}Tracks{% endif %}</span>
+                            <svg class="w-4 h-4 text-bc-cream/40 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        <div class="dropdown-menu hidden absolute top-full left-0 mt-1 w-full min-w-[120px] py-1 rounded-lg bg-bc-gray-light border border-bc-gray-light/50 shadow-xl z-50">
+                            <button type="button" class="dropdown-item w-full px-3 py-2 text-left text-sm text-bc-cream hover:bg-bc-teal/20 transition-colors {% if release_type == 'all' %}bg-bc-teal/10 text-bc-teal{% endif %}" data-value="all">All Types</button>
+                            <button type="button" class="dropdown-item w-full px-3 py-2 text-left text-sm text-bc-cream hover:bg-bc-teal/20 transition-colors {% if release_type == 'album' %}bg-bc-teal/10 text-bc-teal{% endif %}" data-value="album">Albums</button>
+                            <button type="button" class="dropdown-item w-full px-3 py-2 text-left text-sm text-bc-cream hover:bg-bc-teal/20 transition-colors {% if release_type == 'track' %}bg-bc-teal/10 text-bc-teal{% endif %}" data-value="track">Tracks</button>
+                        </div>
+                    </div>
+                    
                     <!-- Date Filter -->
                     <div class="relative" data-dropdown>
                         <input type="hidden" id="date-filter" name="date" value="{{ date_filter }}" class="filter-input">
@@ -229,6 +252,7 @@ document.addEventListener('click', function(e) {
             swap: 'innerHTML',
             values: {
                 search: document.getElementById('search-input').value,
+                type: document.getElementById('type-filter').value,
                 date: document.getElementById('date-filter').value,
                 sort: document.getElementById('sort-filter').value
             }
@@ -332,6 +356,7 @@ function finishSync(newCount, reachedLimit) {
     
     // Clear filters and refresh
     document.getElementById('search-input').value = '';
+    document.getElementById('type-filter').value = 'all';
     document.getElementById('date-filter').value = 'all';
     document.getElementById('sort-filter').value = 'newest';
     

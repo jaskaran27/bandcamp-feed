@@ -268,12 +268,16 @@ def fetch_new_releases_streaming(
                         skipped_count += 1
                         continue
                     
+                    # Determine release type from URL
+                    release_type = Release.RELEASE_TYPE_TRACK if '/track/' in parsed['bandcamp_url'] else Release.RELEASE_TYPE_ALBUM
+                    
                     Release.objects.create(
                         email_id=email_id,
                         uploader=parsed['uploader'],
                         release_name=parsed['release_name'],
                         album_art_url=parsed['album_art_url'],
                         bandcamp_url=parsed['bandcamp_url'],
+                        release_type=release_type,
                         received_at=msg.date or timezone.now(),
                     )
                     
@@ -354,12 +358,16 @@ def fetch_new_releases_streaming(
                             skipped_count += 1
                             continue
                         
+                        # Determine release type from URL
+                        release_type = Release.RELEASE_TYPE_TRACK if '/track/' in parsed['bandcamp_url'] else Release.RELEASE_TYPE_ALBUM
+                        
                         Release.objects.create(
                             email_id=email_id,
                             uploader=parsed['uploader'],
                             release_name=parsed['release_name'],
                             album_art_url=parsed['album_art_url'],
                             bandcamp_url=parsed['bandcamp_url'],
+                            release_type=release_type,
                             received_at=msg.date or timezone.now(),
                         )
                         
@@ -445,12 +453,16 @@ def fetch_new_releases_streaming(
                             skipped_count += 1
                             continue
                         
+                        # Determine release type from URL
+                        release_type = Release.RELEASE_TYPE_TRACK if '/track/' in parsed['bandcamp_url'] else Release.RELEASE_TYPE_ALBUM
+                        
                         Release.objects.create(
                             email_id=email_id,
                             uploader=parsed['uploader'],
                             release_name=parsed['release_name'],
                             album_art_url=parsed['album_art_url'],
                             bandcamp_url=parsed['bandcamp_url'],
+                            release_type=release_type,
                             received_at=msg.date or timezone.now(),
                         )
                         
@@ -517,7 +529,8 @@ def get_cached_releases(
     per_page: int = 25,
     search: str = '',
     date_filter: str = 'all',
-    sort: str = 'newest'
+    sort: str = 'newest',
+    release_type: str = 'all'
 ):
     """
     Get paginated and filtered cached releases.
@@ -528,6 +541,7 @@ def get_cached_releases(
         search: Search query for uploader or release name
         date_filter: 'all', 'week', 'month', '3months', 'year'
         sort: 'newest', 'oldest', 'uploader_az', 'uploader_za'
+        release_type: 'all', 'album', 'track'
     
     Returns:
         Tuple of (releases queryset, total_count, total_pages)
@@ -556,6 +570,10 @@ def get_cached_releases(
         
         if cutoff:
             releases = releases.filter(received_at__gte=cutoff)
+    
+    # Apply release type filter
+    if release_type in ('album', 'track'):
+        releases = releases.filter(release_type=release_type)
     
     # Apply sorting
     if sort == 'newest':

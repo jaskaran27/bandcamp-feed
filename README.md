@@ -14,7 +14,7 @@ A local Django web application that connects to your Gmail via IMAP, filters for
 - **SQLite Caching**: Stores parsed releases locally to avoid re-processing emails
 - **Two-Phase Sync**: Prioritizes recent emails first, then processes historical backlog incrementally
 - **Real-time Progress**: Server-Sent Events (SSE) provide live feedback during email sync
-- **Search & Filter**: Filter releases by text search, date range, and sort order
+- **Search & Filter**: Filter releases by text search, release type, date range, and sort order
 - **Custom Domain Support**: Handles both `*.bandcamp.com` URLs and custom artist domains
 
 ## Tech Stack
@@ -109,7 +109,7 @@ EMAIL_PASSWORD=abcd efgh ijkl mnop
 1. **View Feed**: The main page displays all cached Bandcamp releases in a grid
 2. **Sync**: Click **Sync Emails** to fetch new releases from Gmail (progress shown in real-time)
 3. **Search**: Type in the search box to filter by uploader or release name
-4. **Filter by Date**: Use the dropdown to show releases from the last week, month, 3 months, or year
+4. **Filter**: Use the dropdown to filter releases by date (last week, month, 3 months, or year) or release type (album or track)
 5. **Sort**: Order by newest, oldest, or uploader name (A-Z or Z-A)
 6. **Browse**: Click any release card to open it on Bandcamp
 
@@ -138,17 +138,6 @@ bandcamp-feed/
 ├── requirements.txt        # Python dependencies
 └── manage.py
 ```
-
-## Data Model
-
-The `Release` model stores:
-- `email_id`: Unique identifier from the email
-- `uploader`: Artist or label name
-- `release_name`: Album/EP/track name
-- `album_art_url`: URL to the cover artwork
-- `bandcamp_url`: Link to the release on Bandcamp
-- `received_at`: When the email was received
-- `created_at`: When the record was added to the database
 
 ## Security Notes
 

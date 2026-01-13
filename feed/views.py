@@ -19,6 +19,7 @@ def get_filter_params(request):
         'search': request.GET.get('search', '').strip(),
         'date_filter': request.GET.get('date', 'all'),
         'sort': request.GET.get('sort', 'newest'),
+        'release_type': request.GET.get('type', 'all'),
         'page': int(request.GET.get('page', 1)),
     }
 
@@ -26,12 +27,15 @@ def get_filter_params(request):
 def build_query_string(params, exclude=None):
     """Build query string from params, optionally excluding some keys."""
     exclude = exclude or []
+    # Map internal param names to URL param names
+    param_name_map = {'release_type': 'type', 'date_filter': 'date'}
     parts = []
     for key, value in params.items():
         if key not in exclude and value and value != 'all' and value != 'newest':
             if key == 'page' and value == 1:
                 continue
-            parts.append(f"{key}={value}")
+            url_key = param_name_map.get(key, key)
+            parts.append(f"{url_key}={value}")
     return '&'.join(parts)
 
 
@@ -47,6 +51,7 @@ def index(request):
         search=params['search'],
         date_filter=params['date_filter'],
         sort=params['sort'],
+        release_type=params['release_type'],
     )
     
     stats = get_feed_stats()
@@ -67,6 +72,7 @@ def index(request):
         'search': params['search'],
         'date_filter': params['date_filter'],
         'sort': params['sort'],
+        'release_type': params['release_type'],
         'base_query': base_query,
         'stats': stats,
     })
@@ -84,6 +90,7 @@ def releases_partial(request):
         search=params['search'],
         date_filter=params['date_filter'],
         sort=params['sort'],
+        release_type=params['release_type'],
     )
     
     base_query = build_query_string(params, exclude=['page'])
@@ -100,6 +107,7 @@ def releases_partial(request):
         'search': params['search'],
         'date_filter': params['date_filter'],
         'sort': params['sort'],
+        'release_type': params['release_type'],
         'base_query': base_query,
     })
 
