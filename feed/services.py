@@ -573,7 +573,7 @@ def get_cached_releases(
     
     # Apply release type filter
     if release_type in ('album', 'track'):
-        releases = releases.filter(release_type=release_type)
+        releases = releases.filter(release_type=release_type.upper())
     
     # Apply sorting
     if sort == 'newest':
