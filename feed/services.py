@@ -201,6 +201,10 @@ def fetch_new_releases_streaming(
     new_found_in_recent = 0
     reached_limit = False
     
+    # Early termination thresholds
+    CONSECUTIVE_EXISTING_THRESHOLD = 10  # Stop scanning direction if this many consecutive existing
+    NO_NEW_THRESHOLD = 20  # Stop if we process this many without finding any new
+    
     try:
         yield {'type': 'progress', 'message': 'Connecting to email server...', 'processed': 0, 'new_count': 0}
         
@@ -213,9 +217,11 @@ def fetch_new_releases_streaming(
             # Limit for phase 1 - just check recent emails quickly
             recent_limit = min(100, limit // 2) if limit > 0 else 100
             recent_processed = 0
+            consecutive_existing = 0  # Track consecutive existing emails
+            phase1_stopped_early = False
             
             for folder_info in folders:
-                if recent_processed >= recent_limit:
+                if recent_processed >= recent_limit or phase1_stopped_early:
                     break
                     
                 folder_name = folder_info.name
@@ -239,6 +245,11 @@ def fetch_new_releases_streaming(
                     if recent_processed >= recent_limit:
                         break
                     
+                    # Early termination: too many consecutive existing emails
+                    if consecutive_existing >= CONSECUTIVE_EXISTING_THRESHOLD:
+                        phase1_stopped_early = True
+                        break
+                    
                     subject = msg.subject or ""
                     if 'new release from' not in subject.lower():
                         continue
@@ -247,26 +258,32 @@ def fetch_new_releases_streaming(
                     processed_count += 1
                     email_id = f"{folder_name}:{msg.uid}"
                     
-                    # If we hit an email we already have, we've caught up on recent
+                    # If we hit an email we already have, increment consecutive counter
                     if email_id in existing_ids:
                         skipped_count += 1
-                        # After hitting 10 existing in a row in recent scan, move to historical
+                        consecutive_existing += 1
                         continue
                     
                     html_content = msg.html or msg.text or ""
                     if not html_content:
                         skipped_count += 1
+                        consecutive_existing += 1
                         continue
                     
                     parsed = parse_bandcamp_email(html_content, subject)
                     
                     if not parsed['uploader'] or not parsed['bandcamp_url'] or not parsed['release_name']:
                         skipped_count += 1
+                        consecutive_existing += 1
                         continue
                     
                     if parsed['bandcamp_url'] in existing_urls:
                         skipped_count += 1
+                        consecutive_existing += 1
                         continue
+                    
+                    # Found a new one! Reset the consecutive counter
+                    consecutive_existing = 0
                     
                     # Determine release type from URL
                     release_type = Release.RELEASE_TYPE_TRACK if '/track/' in parsed['bandcamp_url'] else Release.RELEASE_TYPE_ALBUM
@@ -303,8 +320,12 @@ def fetch_new_releases_streaming(
                     'new_count': new_count,
                 }
                 
+                # Track emails without finding new ones for early termination
+                emails_without_new = 0
+                phase2_stopped_early = False
+                
                 for folder_info in folders:
-                    if reached_limit:
+                    if reached_limit or phase2_stopped_early:
                         break
                         
                     folder_name = folder_info.name
@@ -336,27 +357,39 @@ def fetch_new_releases_streaming(
                             reached_limit = True
                             break
                         
+                        # Early termination: too many emails without finding new ones
+                        if emails_without_new >= NO_NEW_THRESHOLD:
+                            phase2_stopped_early = True
+                            break
+                        
                         processed_count += 1
                         email_id = f"{folder_name}:{msg.uid}"
                         
                         if email_id in existing_ids:
                             skipped_count += 1
+                            emails_without_new += 1
                             continue
                         
                         html_content = msg.html or msg.text or ""
                         if not html_content:
                             skipped_count += 1
+                            emails_without_new += 1
                             continue
                         
                         parsed = parse_bandcamp_email(html_content, subject)
                         
                         if not parsed['uploader'] or not parsed['bandcamp_url'] or not parsed['release_name']:
                             skipped_count += 1
+                            emails_without_new += 1
                             continue
                         
                         if parsed['bandcamp_url'] in existing_urls:
                             skipped_count += 1
+                            emails_without_new += 1
                             continue
+                        
+                        # Found a new one! Reset the counter
+                        emails_without_new = 0
                         
                         # Determine release type from URL
                         release_type = Release.RELEASE_TYPE_TRACK if '/track/' in parsed['bandcamp_url'] else Release.RELEASE_TYPE_ALBUM
@@ -401,9 +434,13 @@ def fetch_new_releases_streaming(
                     'new_count': new_count,
                 }
                 
+                # Track emails without finding new ones for early termination
+                emails_without_new = 0
+                first_sync_stopped_early = False
+                
                 # Continue where phase 1 left off
                 for folder_info in folders:
-                    if reached_limit:
+                    if reached_limit or first_sync_stopped_early:
                         break
                         
                     folder_name = folder_info.name
@@ -431,27 +468,39 @@ def fetch_new_releases_streaming(
                             reached_limit = True
                             break
                         
+                        # Early termination: too many emails without finding new ones
+                        if emails_without_new >= NO_NEW_THRESHOLD:
+                            first_sync_stopped_early = True
+                            break
+                        
                         processed_count += 1
                         email_id = f"{folder_name}:{msg.uid}"
                         
                         if email_id in existing_ids:
                             skipped_count += 1
+                            emails_without_new += 1
                             continue
                         
                         html_content = msg.html or msg.text or ""
                         if not html_content:
                             skipped_count += 1
+                            emails_without_new += 1
                             continue
                         
                         parsed = parse_bandcamp_email(html_content, subject)
                         
                         if not parsed['uploader'] or not parsed['bandcamp_url'] or not parsed['release_name']:
                             skipped_count += 1
+                            emails_without_new += 1
                             continue
                         
                         if parsed['bandcamp_url'] in existing_urls:
                             skipped_count += 1
+                            emails_without_new += 1
                             continue
+                        
+                        # Found a new one! Reset the counter
+                        emails_without_new = 0
                         
                         # Determine release type from URL
                         release_type = Release.RELEASE_TYPE_TRACK if '/track/' in parsed['bandcamp_url'] else Release.RELEASE_TYPE_ALBUM
