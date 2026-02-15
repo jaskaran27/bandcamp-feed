@@ -2,10 +2,11 @@ import json
 import logging
 
 from django.shortcuts import render
-from django.http import StreamingHttpResponse
+from django.http import StreamingHttpResponse, JsonResponse
 from django.conf import settings
 from django.views.decorators.http import require_http_methods
 
+from .models import FavouriteUploader
 from .services import fetch_new_releases, fetch_new_releases_streaming, get_cached_releases, get_feed_stats
 
 logger = logging.getLogger(__name__)
@@ -20,6 +21,7 @@ def get_filter_params(request):
         'date_filter': request.GET.get('date', 'all'),
         'sort': request.GET.get('sort', 'newest'),
         'release_type': request.GET.get('type', 'all'),
+        'favourites': request.GET.get('favourites', 'no'),
         'page': int(request.GET.get('page', 1)),
     }
 
@@ -31,7 +33,7 @@ def build_query_string(params, exclude=None):
     param_name_map = {'release_type': 'type', 'date_filter': 'date'}
     parts = []
     for key, value in params.items():
-        if key not in exclude and value and value != 'all' and value != 'newest':
+        if key not in exclude and value and value not in ('all', 'newest', 'no'):
             if key == 'page' and value == 1:
                 continue
             url_key = param_name_map.get(key, key)
@@ -52,6 +54,7 @@ def index(request):
         date_filter=params['date_filter'],
         sort=params['sort'],
         release_type=params['release_type'],
+        favourites=params['favourites'],
     )
     
     stats = get_feed_stats()
@@ -73,6 +76,7 @@ def index(request):
         'date_filter': params['date_filter'],
         'sort': params['sort'],
         'release_type': params['release_type'],
+        'favourites': params['favourites'],
         'base_query': base_query,
         'stats': stats,
     })
@@ -91,6 +95,7 @@ def releases_partial(request):
         date_filter=params['date_filter'],
         sort=params['sort'],
         release_type=params['release_type'],
+        favourites=params['favourites'],
     )
     
     base_query = build_query_string(params, exclude=['page'])
@@ -108,6 +113,7 @@ def releases_partial(request):
         'date_filter': params['date_filter'],
         'sort': params['sort'],
         'release_type': params['release_type'],
+        'favourites': params['favourites'],
         'base_query': base_query,
     })
 
@@ -139,6 +145,8 @@ def sync_releases(request):
             'search': '',
             'date_filter': 'all',
             'sort': 'newest',
+            'release_type': 'all',
+            'favourites': 'no',
             'base_query': '',
         })
         
@@ -159,6 +167,8 @@ def sync_releases(request):
             'search': '',
             'date_filter': 'all',
             'sort': 'newest',
+            'release_type': 'all',
+            'favourites': 'no',
             'base_query': '',
         })
         
@@ -177,6 +187,8 @@ def sync_releases(request):
             'search': '',
             'date_filter': 'all',
             'sort': 'newest',
+            'release_type': 'all',
+            'favourites': 'no',
             'base_query': '',
         })
 
@@ -205,3 +217,26 @@ def sync_releases_stream(request):
     response['Cache-Control'] = 'no-cache'
     response['X-Accel-Buffering'] = 'no'
     return response
+
+
+@require_http_methods(["POST"])
+def toggle_favourite(request):
+    """
+    Toggle favourite status for an uploader.
+    Returns the updated star button partial for HTMX swap.
+    """
+    uploader = request.POST.get('uploader', '').strip()
+    if not uploader:
+        return JsonResponse({'error': 'Missing uploader'}, status=400)
+    
+    fav, created = FavouriteUploader.objects.get_or_create(name=uploader)
+    if not created:
+        fav.delete()
+        is_favourite = False
+    else:
+        is_favourite = True
+    
+    return render(request, 'feed/partials/favourite_btn.html', {
+        'uploader': uploader,
+        'is_favourite': is_favourite,
+    })

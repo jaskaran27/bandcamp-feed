@@ -28,3 +28,21 @@ class Release(models.Model):
 
     def __str__(self):
         return f"{self.uploader} - {self.release_name}"
+
+
+class FavouriteUploader(models.Model):
+    """
+    Tracks favourite uploader names for filtering.
+    Stored separately so new releases from a favourite uploader
+    are automatically included without needing to update Release rows.
+    """
+    name = models.CharField(max_length=255, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['name']
+        verbose_name = 'Favourite Uploader'
+        verbose_name_plural = 'Favourite Uploaders'
+
+    def __str__(self):
+        return self.name

@@ -93,6 +93,27 @@
                 
                 <!-- Custom Filter Dropdowns -->
                 <div class="flex gap-2">
+                    <!-- Favourites Toggle -->
+                    <input type="hidden" id="favourites-filter" name="favourites" value="{{ favourites }}" class="filter-input">
+                    <button 
+                        type="button"
+                        id="favourites-toggle"
+                        class="flex items-center gap-2 px-3 py-2.5 rounded-lg border transition-colors {% if favourites == 'yes' %}bg-yellow-400/10 border-yellow-400/50 text-yellow-400{% else %}bg-bc-gray border-bc-gray-light/30 text-bc-cream/60 hover:border-bc-gray-light/50{% endif %}"
+                        onclick="toggleFavourites()"
+                        title="Show favourites only"
+                    >
+                        {% if favourites == 'yes' %}
+                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1">
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                        </svg>
+                        {% else %}
+                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                        </svg>
+                        {% endif %}
+                        <span class="text-sm hidden sm:inline">Favourites</span>
+                    </button>
+                    
                     <!-- Type Filter -->
                     <div class="relative" data-dropdown>
                         <input type="hidden" id="type-filter" name="type" value="{{ release_type }}" class="filter-input">
@@ -171,7 +192,7 @@
             <div class="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
                 <p class="text-bc-cream/60">
                     <span id="release-count" class="text-bc-cream font-medium">{{ release_count }}</span>
-                    {% if search or date_filter != 'all' %}
+                    {% if search or date_filter != 'all' or favourites == 'yes' %}
                     result{{ release_count|pluralize }}
                     <span class="text-bc-cream/40">({{ total_in_db }} total)</span>
                     {% else %}
@@ -224,6 +245,40 @@ function toggleDropdown(trigger) {
     }
 }
 
+// Favourites toggle logic
+function toggleFavourites() {
+    const hiddenInput = document.getElementById('favourites-filter');
+    const btn = document.getElementById('favourites-toggle');
+    const isActive = hiddenInput.value === 'yes';
+    
+    if (isActive) {
+        hiddenInput.value = 'no';
+        btn.classList.remove('bg-yellow-400/10', 'border-yellow-400/50', 'text-yellow-400');
+        btn.classList.add('bg-bc-gray', 'border-bc-gray-light/30', 'text-bc-cream/60');
+        btn.querySelector('svg').setAttribute('fill', 'none');
+        btn.querySelector('svg').setAttribute('stroke-width', '1.5');
+    } else {
+        hiddenInput.value = 'yes';
+        btn.classList.remove('bg-bc-gray', 'border-bc-gray-light/30', 'text-bc-cream/60');
+        btn.classList.add('bg-yellow-400/10', 'border-yellow-400/50', 'text-yellow-400');
+        btn.querySelector('svg').setAttribute('fill', 'currentColor');
+        btn.querySelector('svg').setAttribute('stroke-width', '1');
+    }
+    
+    // Trigger HTMX request
+    htmx.ajax('GET', '{% url "feed:releases_partial" %}', {
+        target: '#releases-grid',
+        swap: 'innerHTML',
+        values: {
+            search: document.getElementById('search-input').value,
+            type: document.getElementById('type-filter').value,
+            date: document.getElementById('date-filter').value,
+            sort: document.getElementById('sort-filter').value,
+            favourites: hiddenInput.value
+        }
+    });
+}
+
 // Handle dropdown item selection
 document.addEventListener('click', function(e) {
     // Handle dropdown item clicks
@@ -254,7 +309,8 @@ document.addEventListener('click', function(e) {
                 search: document.getElementById('search-input').value,
                 type: document.getElementById('type-filter').value,
                 date: document.getElementById('date-filter').value,
-                sort: document.getElementById('sort-filter').value
+                sort: document.getElementById('sort-filter').value,
+                favourites: document.getElementById('favourites-filter').value
             }
         });
         
@@ -359,6 +415,7 @@ function finishSync(newCount, reachedLimit) {
     document.getElementById('type-filter').value = 'all';
     document.getElementById('date-filter').value = 'all';
     document.getElementById('sort-filter').value = 'newest';
+    document.getElementById('favourites-filter').value = 'no';
     
     // Reload page to update stats
     setTimeout(() => {

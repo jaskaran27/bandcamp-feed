@@ -2,7 +2,7 @@
 Service module for IMAP email fetching and parsing Bandcamp new release notifications.
 """
 
-from django.db.models import Q
+from django.db.models import Q, Exists, OuterRef
 from django.db.models import Count
 
 import re
@@ -15,7 +15,7 @@ from bs4 import BeautifulSoup
 from imap_tools import MailBox, AND
 
 
-from .models import Release
+from .models import Release, FavouriteUploader
 
 logger = logging.getLogger(__name__)
 
@@ -579,7 +579,8 @@ def get_cached_releases(
     search: str = '',
     date_filter: str = 'all',
     sort: str = 'newest',
-    release_type: str = 'all'
+    release_type: str = 'all',
+    favourites: str = 'no'
 ):
     """
     Get paginated and filtered cached releases.
@@ -591,11 +592,21 @@ def get_cached_releases(
         date_filter: 'all', 'week', 'month', '3months', 'year'
         sort: 'newest', 'oldest', 'uploader_az', 'uploader_za'
         release_type: 'all', 'album', 'track'
+        favourites: 'yes' to show only favourite uploaders, 'no' for all
     
     Returns:
         Tuple of (releases queryset, total_count, total_pages)
     """
-    releases = Release.objects.all()
+    # Annotate each release with whether its uploader is a favourite
+    releases = Release.objects.annotate(
+        is_favourite=Exists(
+            FavouriteUploader.objects.filter(name=OuterRef('uploader'))
+        )
+    )
+    
+    # Apply favourites filter
+    if favourites == 'yes':
+        releases = releases.filter(is_favourite=True)
     
     # Apply search filter
     if search:

@@ -76,6 +76,9 @@
             </p>
         </div>
         
+        <!-- Favourite star button -->
+        {% include 'feed/partials/favourite_btn.html' with uploader=release.uploader is_favourite=release.is_favourite %}
+        
         <!-- External link indicator -->
         <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
             <div class="w-7 h-7 rounded-full bg-bc-dark/80 backdrop-blur flex items-center justify-center">
@@ -94,7 +97,7 @@
     {% if has_prev %}
     <a 
         href="?page={{ prev_page }}{% if base_query %}&{{ base_query }}{% endif %}"
-        hx-get="{% url 'feed:releases_partial' %}?page={{ prev_page }}{% if search %}&search={{ search }}{% endif %}{% if release_type and release_type != 'all' %}&type={{ release_type }}{% endif %}{% if date_filter and date_filter != 'all' %}&date={{ date_filter }}{% endif %}{% if sort and sort != 'newest' %}&sort={{ sort }}{% endif %}"
+        hx-get="{% url 'feed:releases_partial' %}?page={{ prev_page }}{% if search %}&search={{ search }}{% endif %}{% if release_type and release_type != 'all' %}&type={{ release_type }}{% endif %}{% if date_filter and date_filter != 'all' %}&date={{ date_filter }}{% endif %}{% if sort and sort != 'newest' %}&sort={{ sort }}{% endif %}{% if favourites == 'yes' %}&favourites=yes{% endif %}"
         hx-target="#releases-grid"
         hx-swap="innerHTML"
         class="flex items-center gap-1 px-4 py-2 rounded-lg bg-bc-gray border border-bc-gray-light/30 hover:border-bc-teal/50 text-bc-cream/80 hover:text-bc-cream transition-colors"
@@ -120,7 +123,7 @@
     {% if has_next %}
     <a 
         href="?page={{ next_page }}{% if base_query %}&{{ base_query }}{% endif %}"
-        hx-get="{% url 'feed:releases_partial' %}?page={{ next_page }}{% if search %}&search={{ search }}{% endif %}{% if release_type and release_type != 'all' %}&type={{ release_type }}{% endif %}{% if date_filter and date_filter != 'all' %}&date={{ date_filter }}{% endif %}{% if sort and sort != 'newest' %}&sort={{ sort }}{% endif %}"
+        hx-get="{% url 'feed:releases_partial' %}?page={{ next_page }}{% if search %}&search={{ search }}{% endif %}{% if release_type and release_type != 'all' %}&type={{ release_type }}{% endif %}{% if date_filter and date_filter != 'all' %}&date={{ date_filter }}{% endif %}{% if sort and sort != 'newest' %}&sort={{ sort }}{% endif %}{% if favourites == 'yes' %}&favourites=yes{% endif %}"
         hx-target="#releases-grid"
         hx-swap="innerHTML"
         class="flex items-center gap-1 px-4 py-2 rounded-lg bg-bc-gray border border-bc-gray-light/30 hover:border-bc-teal/50 text-bc-cream/80 hover:text-bc-cream transition-colors"
@@ -141,7 +144,7 @@
 </div>
 {% endif %}
 
-{% elif search or date_filter != 'all' or release_type != 'all' %}
+{% elif search or date_filter != 'all' or release_type != 'all' or favourites == 'yes' %}
 <!-- No results for filter -->
 <div class="text-center py-16">
     <div class="w-20 h-20 mx-auto mb-6 rounded-full bg-bc-gray flex items-center justify-center">
