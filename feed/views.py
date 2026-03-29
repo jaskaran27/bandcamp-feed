@@ -1,13 +1,18 @@
 import json
 import logging
 
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.http import StreamingHttpResponse, JsonResponse
 from django.conf import settings
+from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
-from .models import FavouriteUploader
-from .services import fetch_new_releases, fetch_new_releases_streaming, get_cached_releases, get_feed_stats
+from .models import Release, FavouriteUploader
+from .services import (
+    fetch_new_releases, fetch_new_releases_streaming,
+    get_cached_releases, get_feed_stats,
+    scrape_stream_tracks, STREAM_URL_MAX_AGE_SECONDS,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -241,4 +246,39 @@ def toggle_favourite(request):
         'uploader': uploader,
         'artist': artist,
         'is_favourite': is_favourite,
+    })
+
+
+@require_http_methods(["GET"])
+def get_stream_url(request, release_id):
+    """
+    Return the streaming tracklist for a release as JSON.
+
+    Serves cached tracks when still fresh (< STREAM_URL_MAX_AGE_SECONDS).
+    Accepts ``?refresh=1`` to force a re-scrape (used by the frontend after
+    a playback error caused by an expired token).
+    """
+    release = get_object_or_404(Release, pk=release_id)
+    force_refresh = request.GET.get('refresh') == '1'
+
+    cache_is_fresh = (
+        release.stream_tracks
+        and release.stream_url_fetched_at
+        and (timezone.now() - release.stream_url_fetched_at).total_seconds() < STREAM_URL_MAX_AGE_SECONDS
+    )
+
+    if not cache_is_fresh or force_refresh:
+        tracks = scrape_stream_tracks(release.bandcamp_url)
+        if tracks:
+            release.stream_tracks = tracks
+            release.stream_url_fetched_at = timezone.now()
+            release.save(update_fields=['stream_tracks', 'stream_url_fetched_at'])
+        else:
+            return JsonResponse({'error': 'Could not extract stream tracks'}, status=404)
+
+    return JsonResponse({
+        'tracks': release.stream_tracks,
+        'title': release.release_name,
+        'artist': release.artist,
+        'art_url': release.album_art_url,
     })

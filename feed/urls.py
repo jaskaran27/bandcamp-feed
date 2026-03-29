@@ -9,4 +9,5 @@ urlpatterns = [
     path('sync/', views.sync_releases, name='sync'),
     path('sync/stream/', views.sync_releases_stream, name='sync_stream'),
     path('favourite/toggle/', views.toggle_favourite, name='toggle_favourite'),
+    path('stream/<int:release_id>/', views.get_stream_url, name='stream_url'),
 ]

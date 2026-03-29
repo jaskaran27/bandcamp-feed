@@ -61,6 +61,22 @@
                 </svg>
             </div>
             {% endif %}
+
+            <!-- Play button overlay -->
+            <button
+                type="button"
+                data-release-id="{{ release.id }}"
+                data-title="{{ release.release_name|escapejs }}"
+                data-artist="{{ release.artist|escapejs }}"
+                data-art="{{ release.album_art_url|escapejs }}"
+                onclick="event.preventDefault(); event.stopPropagation(); playRelease({{ release.id }}, '{{ release.release_name|escapejs }}', '{{ release.artist|escapejs }}', '{{ release.album_art_url|escapejs }}')"
+                class="absolute inset-0 flex items-center justify-center bg-bc-dark/0 group-hover:bg-bc-dark/40 transition-colors"
+            >
+                <span class="w-10 h-10 rounded-full bg-bc-teal/90 flex items-center justify-center opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition-all duration-200 shadow-lg">
+                    <svg class="card-icon-play w-5 h-5 text-white ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                    <svg class="card-icon-pause w-5 h-5 text-white hidden" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                </span>
+            </button>
         </div>
         
         <!-- Release Info -->

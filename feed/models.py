@@ -21,6 +21,8 @@ class Release(models.Model):
     release_type = models.CharField(max_length=10, choices=RELEASE_TYPE_CHOICES, default=RELEASE_TYPE_ALBUM)
     received_at = models.DateTimeField()  # Email received date for chronological ordering
     created_at = models.DateTimeField(auto_now_add=True)
+    stream_tracks = models.JSONField(blank=True, null=True)
+    stream_url_fetched_at = models.DateTimeField(blank=True, null=True)
 
     class Meta:
         ordering = ['-received_at']

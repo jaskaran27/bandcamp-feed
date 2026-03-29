@@ -5,12 +5,14 @@ Service module for IMAP email fetching and parsing Bandcamp new release notifica
 from django.db.models import Q, Exists, OuterRef
 from django.db.models import Count
 
+import json
 import re
 import logging
 from urllib.parse import urlparse, urlunparse
 from datetime import timedelta
 from django.utils import timezone
 from typing import Generator
+import requests
 from bs4 import BeautifulSoup
 from imap_tools import MailBox, AND
 
@@ -21,6 +23,10 @@ logger = logging.getLogger(__name__)
 
 # Default limit for emails to process per sync (to handle large backlogs)
 DEFAULT_EMAIL_LIMIT = 500
+
+# Bandcamp stream URLs are signed with tokens that expire after ~1 hour.
+# Re-scrape proactively before that window to avoid playback interruptions.
+STREAM_URL_MAX_AGE_SECONDS = 45 * 60
 
 
 def clean_url(url: str) -> str:
@@ -705,3 +711,53 @@ def get_feed_stats():
         'oldest_date': oldest.received_at if oldest else None,
         'newest_date': newest.received_at if newest else None,
     }
+
+
+def scrape_stream_tracks(bandcamp_url: str) -> list[dict] | None:
+    """
+    Fetch a Bandcamp album/track page and extract every playable track's
+    MP3-128 streaming URL from the embedded ``data-tralbum`` JSON blob.
+
+    Returns a list of ``{"title", "stream_url", "duration"}`` dicts,
+    or ``None`` on any failure so the caller can surface an error.
+    """
+    try:
+        resp = requests.get(
+            bandcamp_url,
+            headers={'User-Agent': 'Mozilla/5.0 (compatible; BandcampFeed/1.0)'},
+            timeout=15,
+        )
+        resp.raise_for_status()
+    except requests.RequestException:
+        logger.warning('Failed to fetch Bandcamp page: %s', bandcamp_url)
+        return None
+
+    soup = BeautifulSoup(resp.text, 'html.parser')
+
+    tralbum_el = soup.find(attrs={'data-tralbum': True})
+    if not tralbum_el:
+        logger.warning('No data-tralbum element on page: %s', bandcamp_url)
+        return None
+
+    try:
+        tralbum = json.loads(tralbum_el['data-tralbum'])
+    except (json.JSONDecodeError, KeyError):
+        logger.warning('Failed to parse data-tralbum JSON: %s', bandcamp_url)
+        return None
+
+    result = []
+    for track in tralbum.get('trackinfo') or []:
+        file_info = track.get('file') or {}
+        stream = file_info.get('mp3-128')
+        if stream:
+            result.append({
+                'title': track.get('title', 'Untitled'),
+                'stream_url': stream,
+                'duration': track.get('duration', 0),
+            })
+
+    if not result:
+        logger.warning('No mp3-128 streams found in trackinfo: %s', bandcamp_url)
+        return None
+
+    return result
