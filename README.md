@@ -14,14 +14,17 @@ A local Django web application that connects to your Gmail via IMAP, filters for
 - **SQLite Caching**: Stores parsed releases locally to avoid re-processing emails
 - **Two-Phase Sync**: Prioritizes recent emails first, then processes historical backlog incrementally
 - **Real-time Progress**: Server-Sent Events (SSE) provide live feedback during email sync
-- **Search & Filter**: Filter releases by text search, release type, date range, and sort order
+- **Inline Audio Playback**: Stream tracks directly in the browser via scraped Bandcamp MP3 URLs with auto-refreshing tokens
+- **Favourite Uploaders**: Star artists/labels to filter your feed down to favourites
+- **Search & Filter**: Filter releases by text search, release type, date range, favourites, and sort order
 - **Custom Domain Support**: Handles both `*.bandcamp.com` URLs and custom artist domains
 
 ## Tech Stack
 
 - **Backend**: Django 5.2, Python 3.11+
-- **Email Processing**: imap-tools (IMAP), BeautifulSoup4 (HTML parsing)
-- **Frontend**: Django Templates, Tailwind CSS (CDN), HTMX
+- **Email Processing**: imap-tools (IMAP), BeautifulSoup4
+- **Bandcamp Scraping**: Requests
+- **Frontend**: Django Templates, Tailwind CSS (CDN), HTMX 1.9
 - **Database**: SQLite
 - **Real-time Updates**: Server-Sent Events (SSE)
 
@@ -102,16 +105,18 @@ EMAIL_PASSWORD=abcd efgh ijkl mnop
 |---------------------|-------------|---------|
 | `EMAIL_USER` | Gmail address | Required |
 | `EMAIL_PASSWORD` | Gmail App Password | Required |
-| `EMAIL_SYNC_LIMIT` | Max emails to process per sync | 500 |
+| `EMAIL_SYNC_LIMIT` | Max emails to process per sync (0 = unlimited) | `500` |
 
 ## Usage
 
-1. **View Feed**: The main page displays all cached Bandcamp releases in a grid
+1. **View Feed**: The main page displays all cached Bandcamp releases in a paginated grid
 2. **Sync**: Click **Sync Emails** to fetch new releases from Gmail (progress shown in real-time)
 3. **Search**: Type in the search box to filter by uploader or release name
-4. **Filter**: Use the dropdown to filter releases by date (last week, month, 3 months, or year) or release type (album or track)
+4. **Filter**: Use the dropdowns to filter releases by date (last week, month, 3 months, or year), release type (album or track), or favourites only
 5. **Sort**: Order by newest, oldest, or uploader name (A-Z or Z-A)
-6. **Browse**: Click any release card to open it on Bandcamp
+6. **Play**: Click a release card to stream its tracks directly in the browser
+7. **Favourite**: Star an uploader to add them to your favourites for quick filtering
+8. **Browse**: Click the Bandcamp link on a release card to open it on Bandcamp
 
 <img width="1710" height="874" alt="Bandcamp Feed" src="https://github.com/user-attachments/assets/e159c907-9c6f-4152-903f-733fe2c9a268" />
 
@@ -119,22 +124,32 @@ EMAIL_PASSWORD=abcd efgh ijkl mnop
 
 ```
 bandcamp-feed/
-├── bandcamp_feed/          # Django project settings
-│   ├── settings.py         # Configuration with .env support
-│   ├── urls.py             # Root URL routing
+├── bandcamp_feed/              # Django project package
+│   ├── settings.py             # Configuration with .env support
+│   ├── urls.py                 # Root URL routing
 │   └── wsgi.py
-├── feed/                   # Main application
-│   ├── models.py           # Release model (email_id, uploader, release_name, etc.)
-│   ├── services.py         # IMAP fetching & BeautifulSoup parsing logic
-│   ├── views.py            # Views & SSE streaming endpoint
-│   ├── urls.py             # App URL routing
-│   └── templates/feed/     # HTML templates
-│       ├── base.html       # Base template with Tailwind config
-│       ├── index.html      # Main feed page
-│       └── partials/       # HTMX partials
-├── .env                    # Environment variables (not in git)
-├── env.example             # Template for .env
-├── requirements.txt        # Python dependencies
+├── feed/                       # Main application
+│   ├── models.py               # Release & FavouriteUploader models
+│   ├── services.py             # IMAP fetching, email parsing & stream scraping
+│   ├── views.py                # Views, SSE streaming & JSON endpoints
+│   ├── urls.py                 # App URL routing
+│   ├── admin.py                # Django admin registration
+│   ├── apps.py                 # App config
+│   ├── migrations/             # Database migrations
+│   ├── static/feed/            # Static assets
+│   │   ├── css/main.css
+│   │   └── js/
+│   │       ├── player.js       # Inline audio player
+│   │       └── toast.js        # Toast notifications
+│   └── templates/feed/         # HTML templates
+│       ├── base.html           # Base layout with Tailwind config
+│       ├── index.html          # Main feed page
+│       └── partials/           # HTMX partials
+│           ├── releases.html   # Release grid partial
+│           └── favourite_btn.html
+├── .env                        # Environment variables (not in git)
+├── env.example                 # Template for .env
+├── requirements.txt            # Python dependencies
 └── manage.py
 ```
 
