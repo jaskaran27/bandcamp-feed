@@ -226,6 +226,7 @@ def toggle_favourite(request):
     Returns the updated star button partial for HTMX swap.
     """
     uploader = request.POST.get('uploader', '').strip()
+    artist = request.POST.get('artist', '').strip()
     if not uploader:
         return JsonResponse({'error': 'Missing uploader'}, status=400)
     
@@ -238,5 +239,6 @@ def toggle_favourite(request):
     
     return render(request, 'feed/partials/favourite_btn.html', {
         'uploader': uploader,
+        'artist': artist,
         'is_favourite': is_favourite,
     })

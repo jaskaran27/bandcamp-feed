@@ -13,7 +13,8 @@ class Release(models.Model):
     ]
     
     email_id = models.CharField(max_length=255, unique=True)  # IMAP UID for deduplication
-    uploader = models.CharField(max_length=255)  # Artist or label name
+    uploader = models.CharField(max_length=255)  # Bandcamp account slug (subdomain or custom domain)
+    artist = models.CharField(max_length=255)  # Full artist/label display name from email subject
     release_name = models.CharField(max_length=255)  # Album, EP, single, or track name
     album_art_url = models.URLField(max_length=500)
     bandcamp_url = models.URLField(max_length=500)
@@ -27,7 +28,7 @@ class Release(models.Model):
         verbose_name_plural = 'Releases'
 
     def __str__(self):
-        return f"{self.uploader} - {self.release_name}"
+        return f"{self.artist} - {self.release_name}"
 
 
 class FavouriteUploader(models.Model):

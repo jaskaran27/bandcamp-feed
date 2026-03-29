@@ -44,7 +44,7 @@
             </div>
             <img 
                 src="{{ release.album_art_url }}" 
-                alt="{{ release.uploader }} - {{ release.release_name }}"
+                alt="{{ release.artist }} - {{ release.release_name }}"
                 class="album-img relative w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                 loading="lazy"
                 onload="this.previousElementSibling.style.display='none'"
@@ -68,16 +68,14 @@
             <h3 class="font-display font-medium text-sm text-bc-cream truncate group-hover:text-bc-teal transition-colors">
                 {{ release.release_name }}
             </h3>
-            <p class="text-xs text-bc-cream/60 truncate mt-0.5">
-                {{ release.uploader }}
+            <p class="flex items-center gap-1 text-xs text-bc-cream/60 mt-0.5">
+                <span class="truncate">{{ release.artist }}</span>
+                {% include 'feed/partials/favourite_btn.html' with uploader=release.uploader artist=release.artist is_favourite=release.is_favourite %}
             </p>
-            <p class="text-xs text-bc-cream/40 mt-1.5">
+            <p class="text-xs text-bc-cream/40 mt-1">
                 {{ release.received_at|date:"M j, Y" }}
             </p>
         </div>
-        
-        <!-- Favourite star button -->
-        {% include 'feed/partials/favourite_btn.html' with uploader=release.uploader is_favourite=release.is_favourite %}
         
         <!-- External link indicator -->
         <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">

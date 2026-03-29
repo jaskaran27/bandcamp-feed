@@ -58,6 +58,19 @@ def is_bandcamp_unsubscribe_url(url: str) -> bool:
     return 'unsubscribe' in url.lower() or 'unfollow' in url.lower()
 
 
+def extract_uploader_slug(bandcamp_url: str) -> str:
+    """
+    Extract the Bandcamp account slug from a release URL.
+    For .bandcamp.com URLs, returns the subdomain (e.g. "tamburineri").
+    For custom domains, returns the full domain (e.g. "feltsenserecs.com").
+    """
+    parsed = urlparse(bandcamp_url)
+    hostname = parsed.hostname or ''
+    if hostname.endswith('.bandcamp.com'):
+        return hostname.replace('.bandcamp.com', '').lower()
+    return hostname.lower()
+
+
 def clean_uploader_name(name: str) -> str:
     """
     Clean the uploader name by removing ", who brought you..." suffix.
@@ -285,12 +298,13 @@ def fetch_new_releases_streaming(
                     # Found a new one! Reset the consecutive counter
                     consecutive_existing = 0
                     
-                    # Determine release type from URL
                     release_type = Release.RELEASE_TYPE_TRACK if '/track/' in parsed['bandcamp_url'] else Release.RELEASE_TYPE_ALBUM
+                    slug = extract_uploader_slug(parsed['bandcamp_url'])
                     
                     Release.objects.create(
                         email_id=email_id,
-                        uploader=parsed['uploader'],
+                        uploader=slug,
+                        artist=parsed['uploader'],
                         release_name=parsed['release_name'],
                         album_art_url=parsed['album_art_url'],
                         bandcamp_url=parsed['bandcamp_url'],
@@ -391,12 +405,13 @@ def fetch_new_releases_streaming(
                         # Found a new one! Reset the counter
                         emails_without_new = 0
                         
-                        # Determine release type from URL
                         release_type = Release.RELEASE_TYPE_TRACK if '/track/' in parsed['bandcamp_url'] else Release.RELEASE_TYPE_ALBUM
+                        slug = extract_uploader_slug(parsed['bandcamp_url'])
                         
                         Release.objects.create(
                             email_id=email_id,
-                            uploader=parsed['uploader'],
+                            uploader=slug,
+                            artist=parsed['uploader'],
                             release_name=parsed['release_name'],
                             album_art_url=parsed['album_art_url'],
                             bandcamp_url=parsed['bandcamp_url'],
@@ -416,7 +431,6 @@ def fetch_new_releases_streaming(
                             'new_count': new_count,
                         }
                         
-                        # Yield progress every 10 emails
                         if processed_count % 10 == 0:
                             yield {
                                 'type': 'progress',
@@ -502,12 +516,13 @@ def fetch_new_releases_streaming(
                         # Found a new one! Reset the counter
                         emails_without_new = 0
                         
-                        # Determine release type from URL
                         release_type = Release.RELEASE_TYPE_TRACK if '/track/' in parsed['bandcamp_url'] else Release.RELEASE_TYPE_ALBUM
+                        slug = extract_uploader_slug(parsed['bandcamp_url'])
                         
                         Release.objects.create(
                             email_id=email_id,
-                            uploader=parsed['uploader'],
+                            uploader=slug,
+                            artist=parsed['uploader'],
                             release_name=parsed['release_name'],
                             album_art_url=parsed['album_art_url'],
                             bandcamp_url=parsed['bandcamp_url'],
@@ -611,7 +626,7 @@ def get_cached_releases(
     # Apply search filter
     if search:
         releases = releases.filter(
-            Q(uploader__icontains=search) | Q(release_name__icontains=search)
+            Q(artist__icontains=search) | Q(release_name__icontains=search)
         )
     
     # Apply date filter
@@ -641,9 +656,9 @@ def get_cached_releases(
     elif sort == 'oldest':
         releases = releases.order_by('received_at')
     elif sort == 'uploader_az':
-        releases = releases.order_by('uploader', '-received_at')
+        releases = releases.order_by('artist', '-received_at')
     elif sort == 'uploader_za':
-        releases = releases.order_by('-uploader', '-received_at')
+        releases = releases.order_by('-artist', '-received_at')
     else:
         releases = releases.order_by('-received_at')
     
