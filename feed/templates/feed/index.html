@@ -227,30 +227,29 @@
         </div>
     </footer>
 </div>
+{% endblock %}
 
+{% block extra_js %}
 <script>
 let isSyncing = false;
 
-// Custom dropdown logic
 function toggleDropdown(trigger) {
     const dropdown = trigger.closest('[data-dropdown]');
     const menu = dropdown.querySelector('.dropdown-menu');
     const isOpen = !menu.classList.contains('hidden');
-    
-    // Close all dropdowns first
+
     document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.add('hidden'));
-    
+
     if (!isOpen) {
         menu.classList.remove('hidden');
     }
 }
 
-// Favourites toggle logic
 function toggleFavourites() {
     const hiddenInput = document.getElementById('favourites-filter');
     const btn = document.getElementById('favourites-toggle');
     const isActive = hiddenInput.value === 'yes';
-    
+
     if (isActive) {
         hiddenInput.value = 'no';
         btn.classList.remove('bg-yellow-400/10', 'border-yellow-400/50', 'text-yellow-400');
@@ -264,8 +263,7 @@ function toggleFavourites() {
         btn.querySelector('svg').setAttribute('fill', 'currentColor');
         btn.querySelector('svg').setAttribute('stroke-width', '1');
     }
-    
-    // Trigger HTMX request
+
     htmx.ajax('GET', '{% url "feed:releases_partial" %}', {
         target: '#releases-grid',
         swap: 'innerHTML',
@@ -279,29 +277,23 @@ function toggleFavourites() {
     });
 }
 
-// Handle dropdown item selection
 document.addEventListener('click', function(e) {
-    // Handle dropdown item clicks
     if (e.target.classList.contains('dropdown-item')) {
         const dropdown = e.target.closest('[data-dropdown]');
         const hiddenInput = dropdown.querySelector('input[type="hidden"]');
         const label = dropdown.querySelector('.dropdown-label');
         const menu = dropdown.querySelector('.dropdown-menu');
-        
-        // Update value and label
+
         hiddenInput.value = e.target.dataset.value;
         label.textContent = e.target.textContent;
-        
-        // Update active state
+
         dropdown.querySelectorAll('.dropdown-item').forEach(item => {
             item.classList.remove('bg-bc-teal/10', 'text-bc-teal');
         });
         e.target.classList.add('bg-bc-teal/10', 'text-bc-teal');
-        
-        // Close menu
+
         menu.classList.add('hidden');
-        
-        // Trigger HTMX request
+
         htmx.ajax('GET', '{% url "feed:releases_partial" %}', {
             target: '#releases-grid',
             swap: 'innerHTML',
@@ -313,17 +305,15 @@ document.addEventListener('click', function(e) {
                 favourites: document.getElementById('favourites-filter').value
             }
         });
-        
+
         return;
     }
-    
-    // Close dropdowns when clicking outside
+
     if (!e.target.closest('[data-dropdown]')) {
         document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.add('hidden'));
     }
 });
 
-// Close dropdowns on escape
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.add('hidden'));
@@ -333,7 +323,7 @@ document.addEventListener('keydown', function(e) {
 function startSync() {
     if (isSyncing) return;
     isSyncing = true;
-    
+
     const btn = document.getElementById('sync-btn');
     const btnText = document.getElementById('sync-btn-text');
     const syncIcon = document.getElementById('sync-icon');
@@ -342,25 +332,22 @@ function startSync() {
     const currentEl = document.getElementById('sync-current');
     const newCountEl = document.getElementById('sync-new-count');
     const processedEl = document.getElementById('sync-processed');
-    
-    // Disable button and show progress
+
     btn.disabled = true;
     btnText.textContent = 'Syncing...';
     syncIcon.classList.add('animate-spin');
     progressPanel.classList.remove('hidden');
-    
-    // Reset counters
+
     newCountEl.textContent = '0';
     processedEl.textContent = '0';
     currentEl.textContent = '';
     statusEl.textContent = 'Connecting...';
-    
-    // Start SSE connection
+
     const eventSource = new EventSource('{% url "feed:sync_stream" %}');
-    
+
     eventSource.onmessage = function(event) {
         const data = JSON.parse(event.data);
-        
+
         if (data.type === 'progress') {
             statusEl.textContent = data.message || 'Processing emails...';
             processedEl.textContent = data.processed || 0;
@@ -378,7 +365,7 @@ function startSync() {
             showError(data.message);
         }
     };
-    
+
     eventSource.onerror = function() {
         eventSource.close();
         showError('Connection lost. Please try again.');
@@ -387,37 +374,32 @@ function startSync() {
 
 function finishSync(newCount, reachedLimit) {
     isSyncing = false;
-    
+
     const btn = document.getElementById('sync-btn');
     const btnText = document.getElementById('sync-btn-text');
     const syncIcon = document.getElementById('sync-icon');
     const progressPanel = document.getElementById('sync-progress');
-    
-    // Re-enable button
+
     btn.disabled = false;
     btnText.textContent = 'Sync Emails';
     syncIcon.classList.remove('animate-spin');
-    
-    // Hide progress after a delay
+
     setTimeout(() => {
         progressPanel.classList.add('hidden');
     }, 2000);
-    
-    // Show toast
+
     let message = `Synced! Found ${newCount} new release${newCount !== 1 ? 's' : ''}.`;
     if (reachedLimit) {
         message += ' Run sync again for more.';
     }
     showToast(message, false);
-    
-    // Clear filters and refresh
+
     document.getElementById('search-input').value = '';
     document.getElementById('type-filter').value = 'all';
     document.getElementById('date-filter').value = 'all';
     document.getElementById('sort-filter').value = 'newest';
     document.getElementById('favourites-filter').value = 'no';
-    
-    // Reload page to update stats
+
     setTimeout(() => {
         window.location.href = '{% url "feed:index" %}';
     }, 1000);
@@ -425,21 +407,20 @@ function finishSync(newCount, reachedLimit) {
 
 function showError(message) {
     isSyncing = false;
-    
+
     const btn = document.getElementById('sync-btn');
     const btnText = document.getElementById('sync-btn-text');
     const syncIcon = document.getElementById('sync-icon');
     const progressPanel = document.getElementById('sync-progress');
-    
+
     btn.disabled = false;
     btnText.textContent = 'Sync Emails';
     syncIcon.classList.remove('animate-spin');
     progressPanel.classList.add('hidden');
-    
+
     showToast(message, true);
 }
 
-// Clear search on Escape key
 document.getElementById('search-input').addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         this.value = '';
