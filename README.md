@@ -118,7 +118,8 @@ EMAIL_PASSWORD=abcd efgh ijkl mnop
 7. **Favourite**: Star an uploader to add them to your favourites for quick filtering
 8. **Browse**: Click the Bandcamp link on a release card to open it on Bandcamp
 
-<img width="1710" height="874" alt="Bandcamp Feed" src="https://github.com/user-attachments/assets/e159c907-9c6f-4152-903f-733fe2c9a268" />
+<img width="1679" height="872" alt="Bandcamp Feed" src="https://github.com/user-attachments/assets/62b2083e-0c8b-419c-875e-57e94e7bb72e" />
+
 
 ## Project Structure
 
