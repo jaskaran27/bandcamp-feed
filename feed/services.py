@@ -750,8 +750,14 @@ def scrape_stream_tracks(bandcamp_url: str) -> list[dict] | None:
         file_info = track.get('file') or {}
         stream = file_info.get('mp3-128')
         if stream:
+            title = track.get('title', 'Untitled')
+            title = re.sub(
+                r'\\u([0-9a-fA-F]{4})',
+                lambda m: chr(int(m.group(1), 16)),
+                title,
+            )
             result.append({
-                'title': track.get('title', 'Untitled'),
+                'title': title,
                 'stream_url': stream,
                 'duration': track.get('duration', 0),
             })
