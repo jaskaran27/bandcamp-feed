@@ -5,6 +5,7 @@ Service module for IMAP email fetching and parsing Bandcamp new release notifica
 from django.db.models import Q, Exists, OuterRef
 from django.db.models import Count
 
+import html
 import json
 import re
 import logging
@@ -115,8 +116,8 @@ def parse_bandcamp_email(html_content: str, subject: str) -> dict:
     # Extract release name from email body
     release_name = ""
     release_patterns = [
-        r'just released\s+(.+?)(?:,\s*check it out|\.|\s*$)',
-        r'just announced\s+(.+?)(?:,\s*check it out|\.|\s*$)',
+        r'just released\s+(.+?)(?:,\s*check it out|\.(?:\s|$)|\s*$)',
+        r'just announced\s+(.+?)(?:,\s*check it out|\.(?:\s|$)|\s*$)',
     ]
     
     for pattern in release_patterns:
@@ -740,7 +741,8 @@ def scrape_stream_tracks(bandcamp_url: str) -> list[dict] | None:
         return None
 
     try:
-        tralbum = json.loads(tralbum_el['data-tralbum'])
+        raw_json = html.unescape(tralbum_el['data-tralbum'])
+        tralbum = json.loads(raw_json)
     except (json.JSONDecodeError, KeyError):
         logger.warning('Failed to parse data-tralbum JSON: %s', bandcamp_url)
         return None
@@ -750,12 +752,7 @@ def scrape_stream_tracks(bandcamp_url: str) -> list[dict] | None:
         file_info = track.get('file') or {}
         stream = file_info.get('mp3-128')
         if stream:
-            title = track.get('title', 'Untitled')
-            title = re.sub(
-                r'\\u([0-9a-fA-F]{4})',
-                lambda m: chr(int(m.group(1), 16)),
-                title,
-            )
+            title = html.unescape(track.get('title', 'Untitled'))
             result.append({
                 'title': title,
                 'stream_url': stream,
